@@ -50,7 +50,32 @@ prometheus:
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
             target_label: pod
-
+    remoteWrite:
+      - url: "https://vm.infra.dev-p2p.org/api/v1/write"
+        name: "infra-vm"
+        authorization:
+          type: "Bearer"
+          credentials:
+            name: prometheus-remote-write-secret
+            key: PROMETHEUS_API_TOKEN
+        metadataConfig: 
+          send: true
+        writeRelabelConfigs:
+          # Add cluster label
+          - targetLabel: cluster
+            replacement: "saga-spc-mainnet"
+            action: replace
+          # Preserve original namespace value in a new label before replacing
+          - sourceLabels: [namespace]
+            targetLabel: saga_namespace
+            action: replace
+          # Set namespace to fixed value
+          - targetLabel: namespace
+            replacement: "cosmos-saga-spc-mainnet"
+            action: replace
+          - targetLabel: env
+            replacement: "prod"
+            action: replace
 alertmanager:
   enabled: {{ metrics_alertmanager_enabled | bool | lower }}
 
