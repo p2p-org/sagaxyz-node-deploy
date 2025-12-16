@@ -1,8 +1,14 @@
 # SSC Configuration
-ssc_enabled: false
-ssc_version: "0.5.0-alpha.2"
-ssc_mode: "{{ mode }}"
-# Hardcoded values are now used directly in templates
+ssc_mode: "fullnode"
+ssc_moniker: "{{ moniker }}"
+ssc_version: "1.0.0"
+ssc_image: "sagaxyz/ssc:{{ ssc_version }}"
+ssc_key_password: "{{ keychain_password }}"
+ssc_start_args: "--rpc.laddr tcp://0.0.0.0:26657 --p2p.laddr tcp://0.0.0.0:26656 --grpc.address 0.0.0.0:9090"
+ssc_additional_args: ""
+ssc_pruning_strategy: "custom"
+ssc_pruning_keep_recent: "1000"
+ssc_pruning_interval: "100"
 
 # SSC Resources
 ssc_resources:
@@ -12,13 +18,13 @@ ssc_resources:
   limits:
     memory: "1Gi"
     cpu: "0.5"
+ssc_volume_size: "50Gi"
 
-# SSC Storage - using hardcoded saga-default storage class
+# StateSync
+ssc_statesync_enabled: true
+ssc_statesync_trust_interval: 1000
 
-# SSC Network
-ssc_external_address: "127.0.0.1"
-ssc_additional_args: ""
-
-# SSC Genesis Download
-ssc_genesis_download_timeout: 300
-
+# Snapshots
+ssc_snapshot_enabled: true
+ssc_snapshot_interval: 1000
+ssc_snapshot_keep_recent: 2

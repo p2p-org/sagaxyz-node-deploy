@@ -14,3 +14,10 @@ snapshot_keep_recent: 2
 
 # StateSync
 statesync_trust_interval: 1000
+statesync_enabled: false
+statesync_rpc_domains:
+
+# Fluentd
+fluentd_enabled: false
+
+controller_ccv: false

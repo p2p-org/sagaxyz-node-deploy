@@ -8,19 +8,22 @@ _cluster_completion() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
     # Available main commands
-    main_commands="controller chainlet chainlets validator install-completion"
+    main_commands="controller chainlet chainlets ssc validator install-completion"
     
     # Controller subcommands
     controller_subcommands="down up restart"
     
     # Chainlet subcommands
-    chainlet_subcommands="restart redeploy wipe logs status expand-pvc"
+    chainlet_subcommands="restart redeploy wipe logs status height expand-pvc"
     
     # Chainlets subcommands
     chainlets_subcommands="status redeploy"
 
+    # SSC subcommands
+    ssc_subcommands="status"
+
     # Validator subcommands
-    validator_subcommands="unjail"
+    validator_subcommands="unjail status"
     
     # Available options
     opts="--kubeconfig -h --help"
@@ -62,7 +65,7 @@ _cluster_completion() {
             # Handle chainlet subcommand argument completion
             local chainlet_subcmd="${COMP_WORDS[$((main_cmd_index + 1))]}"
             case "${chainlet_subcmd}" in
-                restart|redeploy|wipe|logs|status|expand-pvc)
+                restart|redeploy|wipe|logs|status|height|expand-pvc)
                     # For chainlet commands that need identifiers, complete with both namespaces and chainids
                     if [[ ${COMP_CWORD} -eq $((main_cmd_index + 2)) ]]; then
                         if command -v kubectl >/dev/null 2>&1; then
@@ -93,6 +96,13 @@ _cluster_completion() {
             # If we're right after 'chainlets', suggest subcommands
             if [[ ${COMP_CWORD} -eq $((main_cmd_index + 1)) ]]; then
                 COMPREPLY=($(compgen -W "${chainlets_subcommands} -h --help help" -- "${cur}"))
+                return 0
+            fi
+            ;;
+        ssc)
+            # If we're right after 'ssc', suggest subcommands
+            if [[ ${COMP_CWORD} -eq $((main_cmd_index + 1)) ]]; then
+                COMPREPLY=($(compgen -W "${ssc_subcommands} -h --help help" -- "${cur}"))
                 return 0
             fi
             ;;

@@ -1,25 +1,29 @@
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: sagasrv-ssc
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: ssc-data-pvc
+  name: ssc-pvc
   namespace: sagasrv-ssc
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{ ssc.volume_size }}
-  storageClassName: saga-default
+      storage: {{ ssc_volume_size }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ssc-init-script
+  name: ssc-scripts
   namespace: sagasrv-ssc
 data:
-  init-validator.sh: |
-    {{ lookup('template', 'init-validator.sh.j2') | indent(4) }}
+  start.sh: |
+    {{ lookup('file', role_path ~ '/templates/start.sh') | indent(4) }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -30,6 +34,8 @@ metadata:
     app: ssc
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: ssc
@@ -41,24 +47,43 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "26660"
     spec:
-      initContainers:
-        - name: init-validator
-          image: sagaxyz/ssc:0.5.0-alpha.2
-          command: ["/scripts/init-validator.sh"]
-          env:
-            - name: KEY_PASSWORD
-              value: "{{ ssc.key_password }}"
-            - name: VALIDATOR_MNEMONIC
-              value: "{{ validator_mnemonic }}"
-          volumeMounts:
-            - name: ssc-data
-              mountPath: /root/.ssc
-            - name: init-script
-              mountPath: /scripts
       containers:
         - name: ssc
-          image: sagaxyz/ssc:0.5.0-alpha.2
-          command: ["sscd", "start", "--home", "/root/.ssc", "--rpc.laddr", "tcp://0.0.0.0:26657", "--p2p.laddr", "tcp://0.0.0.0:26656", "--grpc.address", "0.0.0.0:9090"]
+          image: {{ ssc_image }}
+          command: ["bash", "-c", "/scripts/start.sh"]
+          env:
+          - name: CHAIN_ID
+            value: "{{ ssc_chain_id }}"
+          - name: MONIKER
+            value: "{{ ssc_moniker }}"
+          - name: OPTS
+            value: "{{ ssc_start_args }}"
+          - name: DENOM
+            value: "{{ ssc_denom }}"
+          - name: GENESIS_URL
+            value: "{{ ssc_genesis_url }}"
+          - name: LOGLEVEL
+            value: "info"
+          - name: PEERS
+            value: "{{ ssc_peers }}"
+          - name: STATESYNC_ENABLED
+            value: "{{ ssc_statesync_enabled | lower }}"
+          - name: STATESYNC_TRUST_INTERVAL
+            value: "{{ ssc_statesync_trust_interval }}"
+          - name: RPC_SERVERS
+            value: "{{ ssc_rpc_servers | join(',') }}"
+          - name: SNAPSHOT_ENABLED
+            value: "{{ ssc_snapshot_enabled | lower }}"
+          - name: SNAPSHOT_INTERVAL
+            value: "{{ ssc_snapshot_interval }}"
+          - name: SNAPSHOT_KEEP_RECENT
+            value: "{{ ssc_snapshot_keep_recent }}"
+          - name: PRUNING_STRATEGY
+            value: "{{ ssc_pruning_strategy }}"
+          - name: PRUNING_KEEP_RECENT
+            value: "{{ ssc_pruning_keep_recent }}"
+          - name: PRUNING_INTERVAL
+            value: "{{ ssc_pruning_interval }}"
           ports:
             - containerPort: 26657
               name: rpc
@@ -71,6 +96,8 @@ spec:
           volumeMounts:
             - name: ssc-data
               mountPath: /root/.ssc
+            - name: ssc-scripts
+              mountPath: /scripts
           resources:
             requests:
               memory: "{{ ssc_resources.requests.memory }}"
@@ -78,14 +105,21 @@ spec:
             limits:
               memory: "{{ ssc_resources.limits.memory }}"
               cpu: "{{ ssc_resources.limits.cpu }}"
-          # Health checks removed - SSC may not expose health endpoint
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  sscd status | grep -E '"catching_up": *(false|False)'
+            timeoutSeconds: 3
       volumes:
         - name: ssc-data
           persistentVolumeClaim:
-            claimName: ssc-data-pvc
-        - name: init-script
+            claimName: ssc-pvc
+        - name: ssc-scripts
           configMap:
-            name: ssc-init-script
+            name: ssc-scripts
             defaultMode: 0755
       restartPolicy: Always
 ---

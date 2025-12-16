@@ -14,19 +14,28 @@ hub_chain_id: hub_5464111-1
 expose_p2p: true
 metrics_enabled: true
 statesync_enabled: true
+metrics_alertmanager_enabled: true
 
 # StateSync
 statesync_rpc_domains:
   - spsrv1.sagarpc.io
   - spsrv2.sagarpc.io
 
-# SSC (disabled by default for mainnet)
-ssc:
-  enabled: false
-  chain_id: "ssc-1"
-  denom: "usaga"
-  rpc: "https://ssc-rpc.sagarpc.io:443"
-  consumer_gas_price: "0.01"
-  genesis_url: ""
-  volume_size: "100Gi"
-  key_password: "{{ keychain_password }}"
+# SSC
+ssc_chain_id: "ssc-1"
+ssc_denom: "usaga"
+ssc_rpc: "https://ssc-rpc.sagarpc.io:443"
+ssc_consumer_gas_price: "0.01"
+ssc_genesis_url: "https://raw.githubusercontent.com/sagaxyz/mainnet/refs/heads/main/genesis/genesis.json"
+ssc_volume_size: "100Gi"
+ssc_rpc_servers:
+  - https://ssc-statesync-us.sagarpc.io:443
+  - https://ssc-statesync-eu.sagarpc.io:443
+ssc_peers: "f845f0325019ae4f060f3f26179b7902f75c92da@35.234.68.153:26656,3669aa25d9631619af40864ca6f67bac2efc7902@34.148.184.172:26656,ec1aa680c784f678a124a39be64205f6457b6964@34.64.142.18:26656"
+ssc_resources:
+  requests:
+    memory: "4Gi"
+    cpu: "0.5"
+  limits:
+    memory: "8Gi"
+    cpu: "2"
